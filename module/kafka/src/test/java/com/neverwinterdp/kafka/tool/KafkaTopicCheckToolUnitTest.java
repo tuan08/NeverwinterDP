@@ -6,16 +6,14 @@ import org.junit.Test;
 
 import com.neverwinterdp.kafka.tool.server.KafkaCluster;
 import com.neverwinterdp.util.io.FileUtil;
+import com.neverwinterdp.util.log.LoggerFactory;
 
 public class KafkaTopicCheckToolUnitTest {
-  static {
-    System.setProperty("log4j.configuration", "file:src/test/resources/log4j.properties");
-  }
-
   static private KafkaCluster cluster;
 
   @BeforeClass
   static public void setUp() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("WARN");
     FileUtil.removeIfExist("./build/cluster", false);
     cluster = new KafkaCluster("./build/cluster", 1, 2);
     cluster.start();

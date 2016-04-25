@@ -43,9 +43,9 @@ public class KafkaToolUnitTest {
       writer.send(topic, 0, message + i, message + i, 10000);
     }
     writer.close();
-    kafkaClient.getKafkaTool().deleteTopic(topic);
+    kafkaClient.getKafkaAdminTool().deleteTopic(topic);
     Thread.sleep(1000);
-    assertFalse(kafkaClient.getKafkaTool().topicExits(topic));
+    assertFalse(kafkaClient.getKafkaAdminTool().topicExits(topic));
   }
 
   @Test
@@ -59,8 +59,8 @@ public class KafkaToolUnitTest {
       writer.send(topic, 0, String.valueOf(i), message + i, 10000);
     }
     writer.close();
-    kafkaClient.getKafkaTool().deleteTopic(topic);
+    kafkaClient.getKafkaAdminTool().deleteTopic(topic);
     Thread.sleep(1000);
-    assertFalse(kafkaClient.getKafkaTool().topicExits(topic));
+    assertFalse(kafkaClient.getKafkaAdminTool().topicExits(topic));
   }
 }

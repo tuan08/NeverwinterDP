@@ -189,7 +189,6 @@ public class TrackingDataflowBuilder {
       if(numOfInputMessages <= report.getTrackingCount()) {
         break;
       }
-      
       Thread.sleep(10000);
     }
     
@@ -197,6 +196,7 @@ public class TrackingDataflowBuilder {
     shell.execute("dataflow stop --dataflow-id " + dataflowId);
 
     Thread.sleep(10000);
+    
     shell.execute(
       "plugin com.neverwinterdp.scribengin.dataflow.tracking.TrackingMonitor" +
       "  --dataflow-id " + dataflowId + " --show-history-workers  --report-path " + trackingConfig.getTrackingReportPath()

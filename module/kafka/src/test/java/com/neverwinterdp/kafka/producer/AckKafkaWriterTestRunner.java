@@ -3,6 +3,7 @@ package com.neverwinterdp.kafka.producer;
 import java.util.Set;
 
 import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 
@@ -64,9 +65,10 @@ public class AckKafkaWriterTestRunner {
     topicCheckTool.waitForTermination();
     
     leaderKiller.exit();
-    leaderKiller.waitForTermination(10000);
+    leaderKiller.waitForTermination(15000);
     
     topicReport = topicCheckTool.getKafkaTopicReport();
+    System.err.println("topicReport = " + topicReport + ", leaderKiller = " + leaderKiller);
     topicReport.setFailureSimulation(leaderKiller.failureCount);
     topicReport.report(System.out);
     topicCheckTool.getKafkaMessageCheckTool().getMessageTracker().dump(System.out);
@@ -99,7 +101,7 @@ public class AckKafkaWriterTestRunner {
           KafkaTool kafkaTool = new KafkaTool(topic, cluster.getZKConnect());
           TopicMetadata topicMeta = kafkaTool.findTopicMetadata(topic);
           PartitionMetadata partitionMeta = findPartition(topicMeta, partition);
-          Broker partitionLeader = partitionMeta.leader();
+          BrokerEndPoint partitionLeader = partitionMeta.leader();
           Server kafkaServer = cluster.findKafkaServerByPort(partitionLeader.port());
           System.out.println("Shutdown kafka server " + kafkaServer.getPort());
           kafkaServer.shutdown();

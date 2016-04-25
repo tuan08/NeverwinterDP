@@ -30,12 +30,12 @@ public class TopicWriter {
   public long getTotalWrite() { return idTracker.get(); }
   
   public void start() throws Exception {
-    if(kafkaClient.getKafkaTool().topicExits(topicConfig.topic)) {
-      kafkaClient.getKafkaTool().deleteTopic(topicConfig.topic);
+    if(kafkaClient.getKafkaAdminTool().topicExits(topicConfig.topic)) {
+      kafkaClient.getKafkaAdminTool().deleteTopic(topicConfig.topic);
     }
     
     kafkaClient.
-      getKafkaTool().
+      getKafkaAdminTool().
       createTopic(topicConfig.topic, topicConfig.topicNumOfReplications, topicConfig.topicNumOfPartitions);
     KafkaSink sink = new KafkaSink(kafkaClient, topicConfig.topic + ".writer", topicConfig.topic);
     executorService = Executors.newFixedThreadPool(topicConfig.topicNumOfPartitions);

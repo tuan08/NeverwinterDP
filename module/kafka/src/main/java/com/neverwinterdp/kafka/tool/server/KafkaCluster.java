@@ -21,7 +21,7 @@ public class KafkaCluster {
     Map<String, String> kafkaProps = new HashMap<String, String>() ;
     kafkaServers = new EmbededKafkaServerSet(serverDir + "/kafka", 9092, numOfKafkaInstances, kafkaProps);
   }
-
+  
   public KafkaCluster setVerbose(boolean b) {
     kafkaServers.setVerbose(b) ;
     return this;

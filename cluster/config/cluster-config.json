@@ -4,6 +4,7 @@
     "app_release_dir": "/Users/Tuan/Projects/Nventdata/NeverwinterDP/release/build/release",
     "app_repository_dir":    "/Users/Tuan/Projects/AppRepo",
     "zk_home_dir":        "/opt/zookeeper",
+    "es_home_dir":        "/opt/elasticsearch",
     "hadoop_home":        "/opt/hadoop"
   },
 
@@ -101,7 +102,9 @@
     },
 
     "elasticsearch": { 
-      "install": { "source": "${app_release_dir}/elasticsearch", "destination": "/opt/elasticsearch", "type": "rsync" },
+      "install": { 
+        "source": "${app_repository_dir}/elasticsearch-2.3.1.tar.gz", "destination": "${es_home_dir}", "type": "scptgz"
+      },
       "configure": { }
     },
 

@@ -15,7 +15,7 @@ import com.neverwinterdp.vm.client.VMSubmitter;
 
 public class KafkaTrackingUnitTest  {
   LocalScribenginCluster localScribenginCluster ;
-  ScribenginShell shell;
+  ScribenginShell        shell;
   
   @Before
   public void setup() throws Exception {

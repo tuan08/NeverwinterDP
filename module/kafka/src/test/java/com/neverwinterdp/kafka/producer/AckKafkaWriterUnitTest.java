@@ -2,14 +2,12 @@ package com.neverwinterdp.kafka.producer;
 
 import org.junit.Test;
 
+import com.neverwinterdp.util.log.LoggerFactory;
+
 /**
  * @author Tuan
  */
 public class AckKafkaWriterUnitTest {
-  static {
-    System.setProperty("log4j.configuration", "file:src/test/resources/log4j.properties");
-  }
-
   String[] topicConfigArgs = {
       "--topic", "hello",
       "--num-partition", "3",
@@ -19,7 +17,7 @@ public class AckKafkaWriterUnitTest {
       "--send-period", "0",
       "--send-message-size", "1024",
       "--send-max-per-partition", "10000",
-      "--send-max-duration", "30000",
+      "--send-max-duration", "45000",
 
       "--producer:message.send.max.retries=5",
       "--producer:retry.backoff.ms=100",
@@ -32,11 +30,12 @@ public class AckKafkaWriterUnitTest {
       "--producer:acks=all",
       "--producer:compression.type=gzip",
 
-      "--consume-max-duration", "30000", "--consume-batch-fetch", "1000"
+      "--consume-max-duration", "45000", "--consume-batch-fetch", "1000"
   };
 
   @Test
   public void testRunner() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("WARN");
     AckKafkaWriterTestRunner runner = new AckKafkaWriterTestRunner(topicConfigArgs);
     runner.setUp();
     runner.run();

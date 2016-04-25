@@ -1,31 +1,24 @@
 package com.neverwinterdp.kafka.consumer;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 import com.neverwinterdp.kafka.KafkaTool;
 import com.neverwinterdp.util.JSONSerializer;
 
-import kafka.api.FetchRequest;
-import kafka.api.FetchRequestBuilder;
-import kafka.cluster.Broker;
-import kafka.common.OffsetAndMetadata;
-import kafka.common.OffsetMetadataAndError;
-import kafka.common.TopicAndPartition;
-import kafka.javaapi.FetchResponse;
-import kafka.javaapi.OffsetCommitRequest;
-import kafka.javaapi.OffsetCommitResponse;
-import kafka.javaapi.OffsetFetchRequest;
-import kafka.javaapi.OffsetFetchResponse;
+import kafka.cluster.BrokerEndPoint;
 import kafka.javaapi.PartitionMetadata;
-import kafka.javaapi.consumer.SimpleConsumer;
-import kafka.javaapi.message.ByteBufferMessageSet;
-import kafka.message.Message;
-import kafka.message.MessageAndOffset;
 
 
 public class KafkaPartitionReader {
@@ -33,18 +26,21 @@ public class KafkaPartitionReader {
   private String   name;
   private KafkaTool kafkaClient ;
   private String topic ;
+  private TopicPartition topicPartition;
   private PartitionMetadata partitionMetadata;
   private int fetchSize = DEFAULT_FETCH_SIZE;
-  private SimpleConsumer consumer;
-  private long currentOffset;
+  private KafkaConsumer<String, byte[]> consumer;
+  private long currentOffset = 0;
   
-  private List<MessageAndOffset>     currentMessageSet;
-  private Iterator<MessageAndOffset> currentMessageSetIterator;
+  private List<ConsumerRecord<String, byte[]>>     currentRecordSet;
+  private Iterator<ConsumerRecord<String, byte[]>> currentRecordSetIterator;
+  private boolean closed = false;
   
   public KafkaPartitionReader(String name, KafkaTool kafkaClient, String topic, PartitionMetadata pMetadata) throws Exception {
     this.name = name;
     this.kafkaClient = kafkaClient;
     this.topic = topic;
+    this.topicPartition = new TopicPartition(topic, pMetadata.partitionId());
     this.partitionMetadata = pMetadata;
     reconnect() ;
     currentOffset = getLastCommitOffset();
@@ -58,9 +54,18 @@ public class KafkaPartitionReader {
   
   public void reconnect() throws Exception {
     if(consumer != null) consumer.close();
-    Broker broker = partitionMetadata.leader();
+    BrokerEndPoint broker = partitionMetadata.leader();
     if(broker != null) {
-      consumer = new SimpleConsumer(broker.host(), broker.port(), 100000, 2 * fetchSize, name);
+      Properties props = new Properties();
+      props.put("bootstrap.servers", broker.host() + ":" + broker.port());
+      props.put("group.id", name);
+      props.put("enable.auto.commit", "false");
+      props.put("auto.commit.interval.ms", "1000");
+      props.put("session.timeout.ms", "30000");
+      props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+      props.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+      consumer = new KafkaConsumer<>(props);
+      consumer.assign(Arrays.asList(topicPartition));
     } else {
       reconnect(3, 5000);
     }
@@ -74,9 +79,18 @@ public class KafkaPartitionReader {
       //Refresh the partition metadata
       try {
         partitionMetadata = kafkaClient.findPartitionMetadata(topic, partitionMetadata.partitionId());
-        Broker broker = partitionMetadata.leader();
+        BrokerEndPoint broker = partitionMetadata.leader();
         if(broker != null) {
-          consumer = new SimpleConsumer(broker.host(), broker.port(), 60000, 2 * fetchSize, name);
+          Properties props = new Properties();
+          props.put("bootstrap.servers", broker.host() + ":" + broker.port());
+          props.put("group.id", name);
+          props.put("enable.auto.commit", "false");
+          props.put("auto.commit.interval.ms", "1000");
+          props.put("session.timeout.ms", "30000");
+          props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+          props.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+          consumer = new KafkaConsumer<>(props);
+          consumer.assign(Arrays.asList(topicPartition));
           return;
         }
       } catch(Exception ex) {
@@ -86,41 +100,40 @@ public class KafkaPartitionReader {
     throw new Exception("Cannot connect after " + retry + " times", error);
   }
   
-  public void commit() throws Exception {
-    CommitOperation commitOp = new CommitOperation(currentOffset, (short) 0) ;
+  synchronized public void commit() throws Exception {
+    CommitOperation commitOp = new CommitOperation(currentOffset) ;
     execute(commitOp, 5, 5000);
   }
   
   public void rollback() throws Exception  {
     currentOffset = getLastCommitOffset();
-    currentMessageSet = null ;
-    currentMessageSetIterator = null;
+    currentRecordSet = null ;
+    currentRecordSetIterator = null;
   }
   
-  public void close() throws Exception {
+  synchronized public void close() throws Exception {
+    System.out.println("close partition reader " + topicPartition.partition());
     consumer.close();
+    closed = true;
   }
   
   public byte[] next(long maxWait) throws Exception {
-    MessageAndOffset messageAndOffset = nextMessageAndOffset(maxWait);
+    ConsumerRecord<String, byte[]> messageAndOffset = nextMessageAndOffset(maxWait);
     if(messageAndOffset == null) return null ;
-    ByteBuffer payload = messageAndOffset.message().payload();
-    byte[] bytes = new byte[payload.limit()];
-    payload.get(bytes);
-    return bytes;
+    return messageAndOffset.value();
   }
 
-  public MessageAndOffset nextMessageAndOffset(long maxWait) throws Exception {
-    if(currentMessageSetIterator == null) nextMessageSet(maxWait);
-    if(currentMessageSetIterator.hasNext()) {
-      MessageAndOffset sel = currentMessageSetIterator.next();
-      currentOffset = sel.nextOffset();
+  public ConsumerRecord<String, byte[]> nextMessageAndOffset(long maxWait) throws Exception {
+    if(currentRecordSetIterator == null) nextMessageSet(maxWait);
+    if(currentRecordSetIterator.hasNext()) {
+      ConsumerRecord<String, byte[]> sel = currentRecordSetIterator.next();
+      currentOffset = sel.offset() + 1;
       return sel;
     }
     nextMessageSet(maxWait);
-    if(currentMessageSetIterator.hasNext()) {
-      MessageAndOffset sel = currentMessageSetIterator.next();
-      currentOffset = sel.nextOffset();
+    if(currentRecordSetIterator.hasNext()) {
+      ConsumerRecord<String, byte[]> sel = currentRecordSetIterator.next();
+      currentOffset = sel.offset() + 1;
       return sel;
     }
     return null;
@@ -132,48 +145,36 @@ public class KafkaPartitionReader {
     return JSONSerializer.INSTANCE.fromBytes(data, type);
   }
 
-  public List<Message> fetch(int fetchSize, int maxRead, long maxWait) throws Exception {
+  public List<ConsumerRecord<String, byte[]>> fetch(int fetchSize, int maxRead, long maxWait) throws Exception {
     return fetch(fetchSize, maxRead, maxWait, 5) ;
   }
   
-  public List<Message> fetch(int fetchSize, int maxRead, long maxWait, int numRetries) throws Exception {
-    List<MessageAndOffset> holder = fetchMessageAndOffset(fetchSize, maxRead, maxWait, numRetries);
-    List<Message> messages = new ArrayList<>();
-    for(int i = 0; i < holder.size(); i++) {
-      MessageAndOffset sel = holder.get(i);
-      messages.add(sel.message());
-      currentOffset = sel.nextOffset();
-    }
-    return messages;
-  }
-  
-  List<MessageAndOffset> fetchMessageAndOffset(int fetchSize, int maxRead, long maxWait, int numRetries) throws Exception {
+  synchronized public List<ConsumerRecord<String, byte[]>> fetch(int fetchSize, int maxRead, long maxWait, int numRetries) throws Exception {
     FetchMessageOperation fetchOperation = new FetchMessageOperation(fetchSize, maxRead, (int)maxWait);
-    return execute(fetchOperation, numRetries, 5000);
+    List<ConsumerRecord<String, byte[]>> records = execute(fetchOperation, numRetries, 5000);
+    currentOffset += records.size();
+    return records;
   }
  
   void nextMessageSet(long maxWait) throws Exception {
-    currentMessageSet = fetchMessageAndOffset(fetchSize, 1000, maxWait, 5);
-    currentMessageSetIterator = currentMessageSet.iterator();
+    currentRecordSet = fetch(fetchSize, 1000, maxWait, 5);
+    currentRecordSetIterator = currentRecordSet.iterator();
   }
   
   long getLastCommitOffset() {
-    TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partitionMetadata.partitionId());
-    List<TopicAndPartition> topicAndPartitions = new ArrayList<>();
-    topicAndPartitions.add(topicAndPartition);
-    OffsetFetchRequest oRequest = new OffsetFetchRequest(name, topicAndPartitions, (short) 0, 0, name);
-    OffsetFetchResponse oResponse = consumer.fetchOffsets(oRequest);
-    Map<TopicAndPartition, OffsetMetadataAndError> offsets = oResponse.offsets();
-    OffsetMetadataAndError offset = offsets.get(topicAndPartition);
-    long currOffset = offset.offset() ;
-    if(currOffset < 0) currOffset = 0;
-    return currOffset;
+    OffsetAndMetadata offsetAndMetadata = consumer.committed(topicPartition);
+    if(offsetAndMetadata == null) return 0l;
+    return offsetAndMetadata.offset();
   }
   
   <T> T execute(Operation<T> op, int retry, long retryDelay) throws Exception {
     Exception error = null;
     for(int i = 0; i < retry; i++) {
       try {
+        if(closed) {
+          error = new Exception("The reader has been closed");
+          break;
+        }
         if(error != null) reconnect(1, retryDelay);
         return op.execute();
       } catch(Exception ex) {
@@ -187,30 +188,24 @@ public class KafkaPartitionReader {
     public T execute() throws Exception ;
   }
   
-  class CommitOperation implements Operation<Short> {
+  class CommitOperation implements Operation<Boolean> {
     long offset;
-    short errorCode;
     
-    public CommitOperation(long offset, short errorCode) {
+    public CommitOperation(long offset) {
       this.offset = offset;
-      this.errorCode = errorCode;
     }
     
     @Override
-    public Short execute() throws Exception {
-      short versionID = 0;
-      int correlationId = 0;
-      TopicAndPartition tp = new TopicAndPartition(topic, partitionMetadata.partitionId());
-      OffsetAndMetadata offsetAndMeta = new OffsetAndMetadata(offset, OffsetAndMetadata.NoMetadata(), errorCode);
-      Map<TopicAndPartition, OffsetAndMetadata> mapForCommitOffset = new HashMap<TopicAndPartition, OffsetAndMetadata>();
-      mapForCommitOffset.put(tp, offsetAndMeta);
-      OffsetCommitRequest offsetCommitReq = new OffsetCommitRequest(name, mapForCommitOffset, correlationId, name, versionID);
-      OffsetCommitResponse offsetCommitResp = consumer.commitOffsets(offsetCommitReq);
-      return (Short) offsetCommitResp.errors().get(tp);
+    public Boolean execute() throws Exception {
+      OffsetAndMetadata offsetAndMeta = new OffsetAndMetadata(offset, "");
+      Map<TopicPartition, OffsetAndMetadata> mapForCommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>();
+      mapForCommitOffset.put(topicPartition, offsetAndMeta);
+      consumer.commitSync(mapForCommitOffset);
+      return true;
     }
   }
 
-  class FetchMessageOperation implements Operation<List<MessageAndOffset>> {
+  class FetchMessageOperation implements Operation<List<ConsumerRecord<String, byte[]>>> {
     int fetchSize;
     int maxRead;
     int maxWait;
@@ -221,27 +216,15 @@ public class KafkaPartitionReader {
       this.maxWait = maxWait ;
     }
     
-    public List<MessageAndOffset> execute() throws Exception {
-      FetchRequest req = 
-          new FetchRequestBuilder().
-          clientId(name).
-          addFetch(topic, partitionMetadata.partitionId(), currentOffset, fetchSize).
-          minBytes(1024).
-          maxWait(maxWait).
-          build();
-      
-      FetchResponse fetchResponse = consumer.fetch(req);
-      if(fetchResponse.hasError()) {
-        short errorCode = fetchResponse.errorCode(topic, partitionMetadata.partitionId());
-        String msg = "Kafka error code = " + errorCode + ", Partition  " + partitionMetadata.partitionId() ;
-        throw new Exception(msg);
-      }
-      List<MessageAndOffset> holder = new ArrayList<>();
-      ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, partitionMetadata.partitionId());
+    public List<ConsumerRecord<String, byte[]>> execute() throws Exception {
+      consumer.seek(topicPartition, currentOffset);
+      ConsumerRecords<String, byte[]> records = consumer.poll(maxWait);
+      List<ConsumerRecord<String, byte[]>> recordList = records.records(topicPartition);
+      List<ConsumerRecord<String, byte[]>> holder = new ArrayList<ConsumerRecord<String, byte[]>>();
       int count = 0;
-      for(MessageAndOffset messageAndOffset : messageSet) {
-        if (messageAndOffset.offset() < currentOffset) continue; //old offset, ignore
-        holder.add(messageAndOffset);
+      for(ConsumerRecord<String, byte[]> record : recordList) {
+        if(record.offset() < currentOffset) continue; //old offset, ignore
+        holder.add(record);
         count++;
         if(count == maxRead) break;
       }

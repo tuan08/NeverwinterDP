@@ -154,8 +154,8 @@ public class KafkaMessageSendTool implements Runnable {
     String kafkaConnects = kafkaClient.getKafkaBrokerList();
     //TODO: add option to delete topic if it exists
     //kafkaTool.deleteTopic(topicConfig.topic);
-    if(!kafkaClient.getKafkaTool().topicExits(topicConfig.topic)) {
-      kafkaClient.getKafkaTool().createTopic(topicConfig.topic, topicConfig.replication, topicConfig.numberOfPartition);
+    if(!kafkaClient.getKafkaAdminTool().topicExits(topicConfig.topic)) {
+      kafkaClient.getKafkaAdminTool().createTopic(topicConfig.topic, topicConfig.replication, topicConfig.numberOfPartition);
     }
    
     TopicMetadata topicMetadata = kafkaClient.findTopicMetadata(topicConfig.topic);

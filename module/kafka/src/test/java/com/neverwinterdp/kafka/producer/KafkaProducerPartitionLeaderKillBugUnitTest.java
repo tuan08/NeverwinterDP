@@ -10,6 +10,7 @@ import com.neverwinterdp.kafka.tool.KafkaClusterTool;
 import com.neverwinterdp.kafka.tool.KafkaMessageCheckTool;
 import com.neverwinterdp.kafka.tool.KafkaMessageSendTool;
 import com.neverwinterdp.kafka.tool.server.KafkaCluster;
+import com.neverwinterdp.util.log.LoggerFactory;
 
 /**
  * This unit test is used to isolate and show all the kafka producer bugs and limitation. 
@@ -18,13 +19,11 @@ import com.neverwinterdp.kafka.tool.server.KafkaCluster;
  */
 
 public class KafkaProducerPartitionLeaderKillBugUnitTest  {
-  static {
-    System.setProperty("log4j.configuration", "file:src/test/resources/log4j.properties");
-  }
   private KafkaCluster cluster ;
   
   @Before
   public void setup() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("WARN");
     cluster = new KafkaCluster("./build/kafka", 1, 2);
     cluster.start();
   }
@@ -69,6 +68,8 @@ public class KafkaProducerPartitionLeaderKillBugUnitTest  {
     System.out.println("Retried count = " + sendTool.getReport().getProducerReport().getMessageRetried());
     System.out.println("Check count = " + checkTool.getMessageCounter().getTotal());
     checkTool.getMessageTracker().dump(System.out);
-    assertTrue(checkTool.getMessageCounter().getTotal() < sendTool.getSentCount());
+    //TODO: review, since version 0.9.0.0 this problem has been fixed, in the previous version,
+    //      the condition should be checkTool.getMessageCounter().getTotal() < sendTool.getSentCount()
+    assertTrue(checkTool.getMessageCounter().getTotal() <= sendTool.getSentCount());
   }
 }

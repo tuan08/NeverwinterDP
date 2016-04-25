@@ -1,13 +1,9 @@
 package com.neverwinterdp.kafka.consumer;
 
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import kafka.javaapi.PartitionMetadata;
-import kafka.javaapi.TopicMetadata;
-import kafka.message.Message;
-
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,16 +13,17 @@ import com.neverwinterdp.kafka.KafkaTool;
 import com.neverwinterdp.kafka.producer.DefaultKafkaWriter;
 import com.neverwinterdp.kafka.tool.server.KafkaCluster;
 import com.neverwinterdp.util.io.FileUtil;
+import com.neverwinterdp.util.log.LoggerFactory;
+
+import kafka.javaapi.PartitionMetadata;
+import kafka.javaapi.TopicMetadata;
 
 public class KafkaPartitionReaderUnitTest {
-  static {
-    System.setProperty("log4j.configuration", "file:src/test/resources/log4j.properties");
-  }
-
   private KafkaCluster cluster;
 
   @Before
   public void setUp() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("WARN");
     FileUtil.removeIfExist("./build/cluster", false);
     
     cluster = new KafkaCluster("./build/cluster", 1, 1);
@@ -49,11 +46,11 @@ public class KafkaPartitionReaderUnitTest {
       writer.send("hello", 0, "key-" + i, hello, 5000);
     }
     writer.close();
+    
     KafkaTool kafkaClient = new KafkaTool(NAME, cluster.getZKConnect());
     TopicMetadata topicMetadata = kafkaClient.findTopicMetadata("hello");
     PartitionMetadata partitionMetadata = findPartition(topicMetadata.partitionsMetadata(), 0);
-    KafkaPartitionReader partitionReader = 
-        new KafkaPartitionReader(NAME, kafkaClient, "hello", partitionMetadata);
+    KafkaPartitionReader partitionReader = new KafkaPartitionReader(NAME, kafkaClient, "hello", partitionMetadata);
     Assert.assertEquals(0, partitionReader.getCurrentOffset());
     partitionReader.fetch(10000, 3, 1000);
     partitionReader.commit();
@@ -90,12 +87,10 @@ public class KafkaPartitionReaderUnitTest {
     PartitionMetadata partitionMetadata = findPartition(topicMetadata.partitionsMetadata(), partition);
     KafkaPartitionReader partitionReader = 
         new KafkaPartitionReader(consumerName, kafkaClient, "hello", partitionMetadata);
-    List<Message> messages = partitionReader.fetch(10000, maxRead, maxWait);
-    for(int i = 0; i < messages.size(); i++) {
-      Message message = messages.get(i) ;
-      ByteBuffer payload = message.payload();
-      byte[] bytes = new byte[payload.limit()];
-      payload.get(bytes);
+    List<ConsumerRecord<String, byte[]>> records = partitionReader.fetch(10000, maxRead, maxWait);
+    for(int i = 0; i < records.size(); i++) {
+      ConsumerRecord<String, byte[]> record = records.get(i) ;
+      byte[] bytes = record.value();
       System.out.println((i + 1) + ". " + new String(bytes));
     }
     partitionReader.commit();

@@ -1,6 +1,7 @@
 package com.neverwinterdp.kafka.tool;
 
 import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 
@@ -29,7 +30,7 @@ public class KafkaClusterTool {
     KafkaTool kafkaTool = new KafkaTool("KafkaPartitionLeaderKiller", cluster.getZKConnect());
     TopicMetadata topicMeta = kafkaTool.findTopicMetadata(topic);
     PartitionMetadata partitionMeta = findPartition(topicMeta, partition);
-    Broker partitionLeader = partitionMeta.leader();
+    BrokerEndPoint partitionLeader = partitionMeta.leader();
     Server kafkaServer = cluster.findKafkaServerByPort(partitionLeader.port());
     return kafkaServer;
   }

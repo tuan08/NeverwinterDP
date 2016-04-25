@@ -40,9 +40,8 @@ public class VMTMGeneratorKafkaApp extends VMApp {
         service.addWriter(new KafkaTrackingMessageWriter(trackingConfig.getKafkaInputTopic()));
       }
 
-      if(!kafkaTool.getKafkaTool().topicExits(trackingConfig.getKafkaInputTopic())) {
-        kafkaTool.
-        getKafkaTool().
+      if(!kafkaTool.getKafkaAdminTool().topicExits(trackingConfig.getKafkaInputTopic())) {
+        kafkaTool.getKafkaAdminTool().
         createTopic(trackingConfig.getKafkaInputTopic(), trackingConfig.getKafkaNumOfReplication(), trackingConfig.getKafkaNumOfPartition());
       }
       service.start();

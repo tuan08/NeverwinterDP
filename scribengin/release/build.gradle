@@ -38,7 +38,6 @@ configurations.all {
 
 dependencies {
   compile project(':scribengin/core')
-  compile project(':scribengin/dataflow/example')
 
   compile group: 'junit', name: 'junit', version: '4.11'
 
@@ -86,14 +85,14 @@ dependencies {
   scribenginDeployJars group: 'org.apache.hadoop', name: 'hadoop-yarn-client', version: '2.4.0'
   scribenginDeployJars group: 'org.apache.hadoop', name: 'hadoop-yarn-common', version: '2.4.0'
   scribenginDeployJars group: 'org.apache.zookeeper', name: 'zookeeper', version: '3.4.6'
-  scribenginDeployJars group: 'com.101tec', name: 'zkclient', version: '0.3'
+  scribenginDeployJars group: 'com.101tec', name: 'zkclient', version: '0.7'
 
   scribenginDeployJars group: 'org.javassist', name: 'javassist', version: '3.16.1-GA'
   scribenginDeployJars group: 'javax.inject', name: 'javax.inject', version: '1'
   scribenginDeployJars group: 'com.beust', name: 'jcommander', version: '1.35'
   scribenginDeployJars group: 'junit', name: 'junit', version: '4.11'
-  scribenginDeployJars group: 'org.apache.kafka', name: 'kafka-clients', version: '0.8.2.2'
-  scribenginDeployJars group: 'org.apache.kafka', name: 'kafka_2.10', version: '0.8.2.2'
+  scribenginDeployJars group: 'org.apache.kafka', name: 'kafka-clients', version: '0.9.0.1'
+  scribenginDeployJars group: 'org.apache.kafka', name: 'kafka_2.10', version: '0.9.0.1'
   scribenginDeployJars group: 'log4j', name: 'log4j', version: '1.2.17'
   scribenginDeployJars group: 'com.yammer.metrics', name: 'metrics-core', version: '2.2.0'
   scribenginDeployJars group: 'com.mycila.guice', name: 'mycila-guice-all', version: '3.2.ga'

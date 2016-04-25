@@ -1,7 +1,6 @@
 package com.neverwinterdp.kafka.tool;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import kafka.javaapi.PartitionMetadata;
-import kafka.javaapi.TopicMetadata;
-import kafka.message.Message;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParametersDelegate;
@@ -23,6 +20,9 @@ import com.neverwinterdp.kafka.tool.KafkaTopicReport.ConsumerReport;
 import com.neverwinterdp.tool.message.MessageExtractor;
 import com.neverwinterdp.tool.message.MessageTracker;
 import com.neverwinterdp.util.text.TabularFormater;
+
+import kafka.javaapi.PartitionMetadata;
+import kafka.javaapi.TopicMetadata;
 
 public class KafkaMessageCheckTool implements Runnable {
   static private String NAME = "KafkaMessageCheckTool";
@@ -225,15 +225,13 @@ public class KafkaMessageCheckTool implements Runnable {
       int total = 0, lastCount = 0, cannotReadCount = 0;
       int fetchRetries = topicConfig.consumerConfig.consumeFetchRetries;
       while(!interrupt ) {
-        List<Message> messages = partitionReader.fetch(fetchSize, batchFetch/*max read*/, 0 /*max wait*/,fetchRetries);
-        messageCounter.count(partitionReader.getPartition(), messages.size());
-        for(Message message : messages) {
-          ByteBuffer payload = message.payload();
-          byte[] bytes = new byte[payload.limit()];
-          payload.get(bytes);
+        List<ConsumerRecord<String, byte[]>> records = partitionReader.fetch(fetchSize, batchFetch/*max read*/, 0 /*max wait*/,fetchRetries);
+        messageCounter.count(partitionReader.getPartition(), records.size());
+        for(ConsumerRecord<String, byte[]> record : records) {
+          byte[] bytes = record.value();
           messageTracker.log(messageExtractor.extract(bytes));
         }
-        total += messages.size();
+        total += records.size();
 
         if(lastCount == total) {
           cannotReadCount++;
@@ -244,13 +242,11 @@ public class KafkaMessageCheckTool implements Runnable {
         if(cannotReadCount >= topicConfig.consumerConfig.consumeRetries) break;
         lastCount = total;
       } 
-      List<Message> messages = 
+      List<ConsumerRecord<String, byte[]>> messages = 
           partitionReader.fetch(fetchSize, batchFetch/*max read*/, 0 /*max wait*/,fetchRetries);
       messageCounter.count(partitionReader.getPartition(), messages.size());
-      for(Message message : messages) {
-        ByteBuffer payload = message.payload();
-        byte[] bytes = new byte[payload.limit()];
-        payload.get(bytes);
+      for(ConsumerRecord<String, byte[]> message : messages) {
+        byte[] bytes = message.value();
         messageTracker.log(messageExtractor.extract(bytes));
       }
       total += messages.size();

@@ -23,6 +23,7 @@ class Service(object):
     elif name == 'kafka': return KafkaService(name, config)
     elif name == 'elasticsearch': return ESService(name, config)
     elif name == 'hadoop': return HadoopService(name, config)
+    elif name == 'tracking': return TrackingService(name, config)
     return None
 
 class ZKService(Service):
@@ -52,11 +53,12 @@ class ESService(Service):
     self.cmdClean   = "rm -rf %s/data && rm -rf %s/logs" % (self.homeDir, self.homeDir)
     self.processes = {
       'Main': {
-        'cmdFindPid': 'pgrep -f com.neverwinterdp.es.Main',
-        'cmdStart':   self.homeDir + '/bin/elasticsearch.sh',
-        'cmdStop':    self.homeDir + '/bin/elasticsearch.sh stop'
+        'cmdFindPid': 'pgrep -f org.elasticsearch.bootstrap.Elasticsearch',
+        'cmdStart':   self.homeDir + '/bin/elasticsearch -d',
+        'cmdStop':    'pkill -9 `pgrep -f org.elasticsearch.bootstrap.Elasticsearch`'
       }
     }
+    
 class HadoopService(Service):
   def init(self, name, config): 
     self.cmdClean   = "rm -rf %s/data && rm -rf %s/logs" % (self.homeDir, self.homeDir)
@@ -85,5 +87,16 @@ class HadoopService(Service):
         'cmdFindPid': 'pgrep -f org.apache.hadoop.yarn.server.nodemanager.NodeManager',
         'cmdStart':   self.homeDir + '/sbin/yarn-daemon.sh start nodemanager',
         'cmdStop':    self.homeDir + '/sbin/yarn-daemon.sh stop  nodemanager'
+      }
+    }
+
+class TrackingService(Service):
+  def init(self, name, config): 
+    self.cmdClean   = "rm -rf %s/data && rm -rf %s/logs" % (self.homeDir, self.homeDir)
+    self.processes = {
+      'kafka': {
+        'cmdFindPid': 'pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp',
+        'cmdStart':   self.homeDir + '/bin/run-tracking.sh',
+        'cmdStop':    'kill -9 `pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp`'
       }
     }

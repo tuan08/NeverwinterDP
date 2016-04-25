@@ -9,16 +9,14 @@ import org.junit.Test;
 import com.neverwinterdp.kafka.tool.server.KafkaCluster;
 import com.neverwinterdp.util.io.FileUtil;
 import com.neverwinterdp.util.log.Log4jRecord;
+import com.neverwinterdp.util.log.LoggerFactory;
 
 public class KafkaAppenderUnitTest {
-  static {
-    System.setProperty("log4j.configuration", "file:src/test/resources/test-log4j.properties");
-  }
-  
   static private KafkaCluster cluster;
 
   @BeforeClass
   static public void setUp() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("WARN");
     cluster = new KafkaCluster("./build/kafka", 1, 2);
     cluster.setNumOfPartition(1);
     cluster.start();

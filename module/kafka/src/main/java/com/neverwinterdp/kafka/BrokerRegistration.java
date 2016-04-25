@@ -3,13 +3,14 @@ package com.neverwinterdp.kafka;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class BrokerRegistration {
-  private int    version;
-  private long   timestamp;
-  private String brokerId;
-  private int    jmx_port = -1;
-  private String host;
-  private int    port;
-  
+  private int      version;
+  private long     timestamp;
+  private String   brokerId;
+  private int      jmx_port = -1;
+  private String   host;
+  private int      port;
+  private String[] endpoints;
+
   public int getVersion() { return version; }
   public void setVersion(int version) { this.version = version; }
   
@@ -28,4 +29,7 @@ public class BrokerRegistration {
   
   public int getPort() { return port; }
   public void setPort(int port) {  this.port = port; }
+  
+  public String[] getEndpoints() { return endpoints; }
+  public void setEndpoints(String[] endpoints) { this.endpoints = endpoints; }
 }

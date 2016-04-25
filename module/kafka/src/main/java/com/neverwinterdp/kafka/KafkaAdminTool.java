@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkConnection;
 
 import kafka.admin.AdminUtils;
 import kafka.admin.PreferredReplicaLeaderElectionCommand;
@@ -56,19 +57,21 @@ public class KafkaAdminTool  {
     int connectionTimeoutMs = 10000;
 
     TopicCommandOptions options = new TopicCommandOptions(args);
-    ZkClient client = 
+    ZkClient zkClient = 
         new ZkClient(zkConnects, sessionTimeoutMs, connectionTimeoutMs, ZKStringSerializer$.MODULE$);
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
     if (topicExits(name)) {
-      TopicCommand.deleteTopic(client, options);
+      TopicCommand.deleteTopic(zkUtils, options);
     }
 
-    TopicCommand.createTopic(client, options);
+    TopicCommand.createTopic(zkUtils, options);
     try {
       Thread.sleep(3000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    client.close();
+    zkUtils.close();
+    zkClient.close();
   }
 
   /**
@@ -82,8 +85,10 @@ public class KafkaAdminTool  {
     int sessionTimeoutMs = 10000;
     int connectionTimeoutMs = 10000;
     ZkClient zkClient = new ZkClient(zkConnects, sessionTimeoutMs, connectionTimeoutMs, ZKStringSerializer$.MODULE$);
-    AdminUtils.deleteTopic(zkClient, topicName);
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
+    AdminUtils.deleteTopic(zkUtils, topicName);
     zkClient.close();
+    zkUtils.close();
   }
 
   /**
@@ -96,11 +101,13 @@ public class KafkaAdminTool  {
     int sessionTimeoutMs = 10000;
     int connectionTimeoutMs = 10000;
     ZkClient zkClient = new ZkClient(zkConnects, sessionTimeoutMs, connectionTimeoutMs, ZKStringSerializer$.MODULE$);
-    boolean exists = AdminUtils.topicExists(zkClient, topicName);
-    if (exists && ZkUtils.pathExists(zkClient, ZkUtils.getDeleteTopicPath(topicName))) {
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
+    boolean exists = AdminUtils.topicExists(zkUtils, topicName);
+    if (exists && zkUtils.pathExists(ZkUtils.getDeleteTopicPath(topicName))) {
       System.err.println("Topic "+topicName+" exists but is scheduled for deletion!");
     }
     zkClient.close();
+    zkUtils.close();
     return exists;
   }
   
@@ -108,14 +115,16 @@ public class KafkaAdminTool  {
   // https://kafka.apache.org/documentation.html#basic_ops_leader_balancing
   // https://cwiki.apache.org/confluence/display/KAFKA/Replication+tools#Replicationtools-2.PreferredReplicaLeaderElectionTool
   public void moveLeaderToPreferredReplica(String topic, int partition) {
-    ZkClient client = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
-
+    ZkClient zkClient = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
     TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);
     // move leader to broker 1
     Set<TopicAndPartition> topicsAndPartitions = asScalaSet(Collections.singleton(topicAndPartition));
-    PreferredReplicaLeaderElectionCommand commands = new PreferredReplicaLeaderElectionCommand(client, topicsAndPartitions);
+    PreferredReplicaLeaderElectionCommand commands = new PreferredReplicaLeaderElectionCommand(zkUtils, topicsAndPartitions);
     commands.moveLeaderToPreferredReplica();
-    client.close();
+    zkUtils.close();
+    zkClient.close();
+    
   }
 
   /**
@@ -128,27 +137,32 @@ public class KafkaAdminTool  {
    *   @see https://cwiki.apache.org/confluence/display/KAFKA/Replication+tools#Replicationtools-6.ReassignPartitionsTool
    * */
   public boolean reassignPartition(String topic, int partition, List<Object> remainingBrokers) {
-    ZkClient client = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
-
+    ZkClient zkClient = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
     TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);
 
     Buffer<Object> seqs = asScalaBuffer(remainingBrokers);
     Map<TopicAndPartition, Seq<Object>> map = new HashMap<>();
     map.put(topicAndPartition, seqs);
     scala.collection.mutable.Map<TopicAndPartition, Seq<Object>> x = asScalaMap(map);
-    ReassignPartitionsCommand command = new ReassignPartitionsCommand(client, x);
-
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
+    ReassignPartitionsCommand command = new ReassignPartitionsCommand(zkUtils, x);
+    zkUtils.close();
+    zkClient.close();
     return command.reassignPartitions();
   }
   
   public boolean reassignPartitionReplicas(String topic, int partition, Integer ... brokerId) {
-    ZkClient client = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
+    ZkClient zkClient = new ZkClient(zkConnects, 10000, 10000, ZKStringSerializer$.MODULE$);
+    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnects), false);
     TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);
 
     Buffer<Object> seqs = asScalaBuffer(Arrays.asList((Object[])brokerId));
     Map<TopicAndPartition, Seq<Object>> map = new HashMap<>();
     map.put(topicAndPartition, seqs);
-    ReassignPartitionsCommand command = new ReassignPartitionsCommand(client, asScalaMap(map));
+    
+    ReassignPartitionsCommand command = new ReassignPartitionsCommand(zkUtils, asScalaMap(map));
+    zkUtils.close();
+    zkClient.close();
     return command.reassignPartitions();
   }
 }

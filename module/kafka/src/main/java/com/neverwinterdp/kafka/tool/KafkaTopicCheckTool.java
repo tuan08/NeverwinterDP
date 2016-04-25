@@ -39,21 +39,13 @@ public class KafkaTopicCheckTool implements Runnable {
     checkTool = new KafkaMessageCheckTool(kafkaTopicConfig);
   }
 
-  public KafkaTopicConfig getKafkaConfig() {
-    return this.kafkaTopicConfig;
-  }
+  public KafkaTopicConfig getKafkaConfig() { return this.kafkaTopicConfig; }
 
-  public KafkaTopicReport getKafkaTopicReport() {
-    return topicReport;
-  }
+  public KafkaTopicReport getKafkaTopicReport() { return topicReport; }
 
-  public KafkaMessageSendTool getKafkaMessageSendTool() {
-    return this.sendTool;
-  }
+  public KafkaMessageSendTool getKafkaMessageSendTool() { return this.sendTool; }
 
-  public KafkaMessageCheckTool getKafkaMessageCheckTool() {
-    return this.checkTool;
-  }
+  public KafkaMessageCheckTool getKafkaMessageCheckTool() { return this.checkTool; }
 
   public void junitReport() throws Exception {
     System.out.println("kafkaTopicConfig.junitReportFile --> " + kafkaTopicConfig.junitReportFile);
@@ -67,8 +59,7 @@ public class KafkaTopicCheckTool implements Runnable {
   }
 
   synchronized public boolean waitForTermination() throws InterruptedException {
-    if (!running)
-      return !running;
+    if(!running) return !running;
     checkTool.waitForTermination();
     Thread.sleep(500);
     return !running;

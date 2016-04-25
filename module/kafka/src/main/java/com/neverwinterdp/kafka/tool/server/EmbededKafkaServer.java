@@ -79,7 +79,8 @@ public class EmbededKafkaServer implements Server {
     }
     thread = new Thread(kafkaGroup, "KafkaLauncher") {
       public void run() {
-        server = new KafkaServer(new KafkaConfig(properties), new SystemTime());
+        scala.Option<String> threadPrefix = scala.Option.apply("kafka");;
+        server = new KafkaServer(new KafkaConfig(properties), new SystemTime(), threadPrefix);
         server.startup();
       }
     };

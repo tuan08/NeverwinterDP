@@ -2,9 +2,6 @@ package com.neverwinterdp.kafka.producer;
 
 import java.util.List;
 
-import kafka.cluster.Broker;
-import kafka.javaapi.PartitionMetadata;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -16,9 +13,11 @@ import com.neverwinterdp.kafka.tool.KafkaMessageSendTool;
 import com.neverwinterdp.kafka.tool.server.KafkaCluster;
 import com.neverwinterdp.util.text.TabularFormater;
 
+import kafka.cluster.BrokerEndPoint;
+import kafka.javaapi.PartitionMetadata;
+
 /**
- * This unit test is used to isolate and show all the kafka producer bugs and limitation. 
- * The following scenarios are tested 
+ * This unit test is used to isolate and show all the kafka producer bugs and limitation. The following scenarios are tested 
  * @author Tuan
  */
 
@@ -49,20 +48,21 @@ public class KafkaProducerPartitionLeaderChangeBugUnitTest  {
       //"--partitions", "2", "--replication-factor", "2" parameters have no effect since --replica-assignment has higher priority 
     };
     KafkaTool kafkaClient = new KafkaTool("KafkaTool", cluster.getZKConnect());
-    kafkaClient.getKafkaTool().createTopic(args);
+    kafkaClient.getKafkaAdminTool().createTopic(args);
     info(kafkaClient.findTopicMetadata(TOPIC).partitionsMetadata());
 
     String[] sendArgs = {
       "--topic" , TOPIC, "--num-partition", "3", "--replication", "2", 
-      "--send-writer-type", "default", "--send-period", "0", "--send-max-per-partition", "10000","--send-max-duration", "60000"
+      "--send-writer-type", "default", "--send-period", "0", "--send-max-per-partition", "10000", "--send-max-duration", "60000"
     };
+    
     KafkaMessageSendTool sendTool = new KafkaMessageSendTool(sendArgs);
     sendTool.runAsDeamon();
 
     while(sendTool.getSentCount() <= 0) Thread.sleep(50); //wait to make sure that send tool send some messages
-    kafkaClient.getKafkaTool().reassignPartitionReplicas(TOPIC, 0, 4, 3, 2);
+    kafkaClient.getKafkaAdminTool().reassignPartitionReplicas(TOPIC, 0, 4, 3, 2);
     //It seems that we do not instruct to change the leader, we loose more messages ?
-    kafkaClient.getKafkaTool().moveLeaderToPreferredReplica(TOPIC, 0);
+    kafkaClient.getKafkaAdminTool().moveLeaderToPreferredReplica(TOPIC, 0);
     Thread.sleep(500);
     info(kafkaClient.findTopicMetadata(TOPIC).partitionsMetadata());
     
@@ -78,18 +78,18 @@ public class KafkaProducerPartitionLeaderChangeBugUnitTest  {
     System.out.println("Sent count = " + sendTool.getSentCount());
     System.out.println("Sent failed count = " + sendTool.getSentFailedCount());
     System.out.println("Check count = " + checkTool.getMessageCounter().getTotal());
-    Assert.assertTrue(checkTool.getMessageCounter().getTotal() < sendTool.getSentCount());
+    //TODO: review, since version 0.9.0.0 this problem has been fixed, in the previous version,
+    //      the condition should be checkTool.getMessageCounter().getTotal() < sendTool.getSentCount()
+    Assert.assertTrue(checkTool.getMessageCounter().getTotal() <= sendTool.getSentCount());
   }
   
   private void info(List<PartitionMetadata> holder) {
-    String[] header = { 
-        "Partition Id", "Leader", "Replicas"
-    };
+    String[] header = { "Partition Id", "Leader", "Replicas" };
     TabularFormater formater = new TabularFormater(header);
     formater.setTitle("Partitions");
     for(PartitionMetadata sel : holder) {
       StringBuilder replicas = new StringBuilder();
-      for(Broker broker : sel.replicas()) {
+      for(BrokerEndPoint broker : sel.replicas()) {
         if(replicas.length() > 0) replicas.append(",");
         replicas.append(broker.port());
       }

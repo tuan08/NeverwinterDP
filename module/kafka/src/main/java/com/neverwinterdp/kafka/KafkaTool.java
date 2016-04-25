@@ -9,6 +9,7 @@ import javax.annotation.PreDestroy;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 
 import com.google.inject.Singleton;
 import com.neverwinterdp.zookeeper.ZKClient;
@@ -43,7 +44,7 @@ public class KafkaTool  {
 
   public String getZkConnects() { return this.zkConnects ; }
   
-  public KafkaAdminTool getKafkaTool() { return new KafkaAdminTool(name, zkConnects); }
+  public KafkaAdminTool getKafkaAdminTool() { return new KafkaAdminTool(name, zkConnects); }
 
   public String getKafkaBrokerList() throws Exception {
     StringBuilder b = new StringBuilder();

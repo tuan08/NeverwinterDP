@@ -29,14 +29,14 @@ public class KafkaStorage extends Storage {
 
   public boolean exists() throws Exception {
     String topic = getStorageConfig().attribute(KafkaStorageConfig.TOPIC);
-    boolean exists = kafkaTool.getKafkaTool().topicExits(topic);
+    boolean exists = kafkaTool.getKafkaAdminTool().topicExits(topic);
     return exists;
   }
   
   @Override
   public void drop() throws Exception {
     String topic = getStorageConfig().attribute(KafkaStorageConfig.TOPIC);
-    kafkaTool.getKafkaTool().deleteTopic(topic);
+    kafkaTool.getKafkaAdminTool().deleteTopic(topic);
     kafkaSource  = null ;
   }
 
@@ -44,7 +44,7 @@ public class KafkaStorage extends Storage {
   public void create() throws Exception {
     StorageConfig config = getStorageConfig();
     String topic = config.attribute(KafkaStorageConfig.TOPIC);
-    kafkaTool.getKafkaTool().createTopic(topic, config.getReplication(), config.getPartitionStream());
+    kafkaTool.getKafkaAdminTool().createTopic(topic, config.getReplication(), config.getPartitionStream());
     kafkaSource = null;
   }
 
