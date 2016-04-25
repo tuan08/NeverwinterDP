@@ -40,10 +40,12 @@ public class KafkaTrackingStorageUnitTest {
   public void testTracking() throws Exception {
     String[] appConfig = {
       "--zk-connect", "localhost:2181",
+      
+      "--kafka-num-of-partition", "5",
+      "--kafka-num-of-replication", "1",
+      
       "--tracking-path", "/tracking",
       "--input-topic", "tracking",
-      "--num-of-partition", "5",
-      "--num-of-replication", "1",
       "--output-topic", "tracking",
       "--max-run-time", "10000",
     };

@@ -1,5 +1,6 @@
 package net.tuan08.tracking.kafka;
 
+import java.io.FileInputStream;
 import java.util.concurrent.TimeUnit;
 
 import com.beust.jcommander.JCommander;
@@ -8,12 +9,23 @@ import com.neverwinterdp.registry.Registry;
 import com.neverwinterdp.registry.RegistryConfig;
 import com.neverwinterdp.registry.zk.RegistryImpl;
 
+import net.tuan08.tracking.PropertiesConfig;
 import net.tuan08.tracking.TrackingGeneratorService;
 import net.tuan08.tracking.TrackingValidatorService;
 
 public class KafkaTrackingApp {
   @Parameter(names = "--zk-connect", description = "The zk connect string")
   private String zkConnects = "localhost:2181";
+
+  @Parameter(names = "--kafka-num-of-replication", description = "The number of the replications")
+  private int    numOfReplication = 1;
+
+  @Parameter(names = "--kafka-num-of-partition", description = "The number of the partitions")
+  private int    numOfPartition = 5;
+  
+  @Parameter(names = "--output-topic", description = "The input topic")
+  private String outputTopic = "tracking";
+  
   
   @Parameter(names = "--tracking-path", description = "The zk connect string")
   private String trackingPath = "/tracking";
@@ -27,15 +39,6 @@ public class KafkaTrackingApp {
   @Parameter(names = "--input-topic", description = "The input topic")
   private String inputTopic = "tracking";
 
-  @Parameter(names = "--num-of-partition", description = "The number of the partitions")
-  private int    numOfPartition = 5;
-  
-  @Parameter(names = "--num-of-replication", description = "The number of the replications")
-  private int    numOfReplication = 1;
-  
-  @Parameter(names = "--output-topic", description = "The input topic")
-  private String outputTopic = "tracking";
-  
   @Parameter(names = "--max-run-time", description = "The max run time for the application")
   private long maxRunTime = 25000;
   
@@ -44,6 +47,22 @@ public class KafkaTrackingApp {
   private TrackingValidatorService validatorService;
   
   public KafkaTrackingApp(String[] args) throws Exception {
+    String configFile = System.getProperty("tracking.config");
+    if(configFile != null) {
+      PropertiesConfig config = new PropertiesConfig();
+      config.load(new FileInputStream(configFile));
+      zkConnects   = config.getProperty("zk.connect", zkConnects);
+      
+      numOfPartition   = config.getPropertyAsInt("kafka.num-of-partition", numOfPartition);
+      numOfReplication = config.getPropertyAsInt("kafka.num-of-replication", numOfReplication);
+
+      trackingPath = config.getProperty("tracking.path", trackingPath);
+      numOfChunk   = config.getPropertyAsInt("tracking.num-of-chunk", numOfChunk);
+      numOfMessagePerChunk = config.getPropertyAsInt("tracking.num-of-message-per-chunk", numOfMessagePerChunk);
+      inputTopic = config.getProperty("tracking.input-topic", inputTopic);
+      outputTopic = config.getProperty("tracking.output-topic", outputTopic);
+      maxRunTime = config.getPropertyAsLong("tracking.max-run-time", maxRunTime);
+    }
     new JCommander(this, args);
     RegistryConfig regConfig = RegistryConfig.getDefault();
     regConfig.setConnect(zkConnects);
@@ -91,11 +110,8 @@ public class KafkaTrackingApp {
   
   public void run() throws Exception {
     start();
-    System.err.println("pass start");
     waitForTermination();
-    System.err.println("pass wait for termination");
     shutdown();
-    System.err.println("pass shutdown");
   }
   
   static public void main(String[] args) throws Exception {

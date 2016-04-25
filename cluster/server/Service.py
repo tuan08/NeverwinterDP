@@ -96,7 +96,7 @@ class TrackingService(Service):
     self.processes = {
       'kafka': {
         'cmdFindPid': 'pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp',
-        'cmdStart':   self.homeDir + '/bin/run-tracking.sh',
+        'cmdStart':   'sleep 10 && ' +self.homeDir + '/bin/run-tracking.sh kafka --daemon',
         'cmdStop':    'kill -9 `pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp`'
       }
     }

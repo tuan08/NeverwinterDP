@@ -86,7 +86,19 @@
       "install": { 
         "source": "${app_release_dir}/tracking", "destination": "${tracking_home_dir}", "type": "rsync"
       },
-      "configure": { }
+      "configure": { 
+        "patch": {
+          "resourceDir": "${base_dir}/config/tracking",
+          "resources":[
+            {
+              "file": "conf/tracking-kafka.properties",
+              "properties": {
+                "tracking.num-of-message-per-chunk": "3000"
+              }
+            }
+          ]
+        }
+      }
     }
   }
 }
