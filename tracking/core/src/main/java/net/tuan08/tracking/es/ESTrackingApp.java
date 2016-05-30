@@ -1,4 +1,4 @@
-package net.tuan08.tracking.kafka;
+package net.tuan08.tracking.es;
 
 import java.io.FileInputStream;
 import java.util.concurrent.TimeUnit;
@@ -11,22 +11,17 @@ import com.neverwinterdp.registry.zk.RegistryImpl;
 
 import net.tuan08.tracking.PropertiesConfig;
 import net.tuan08.tracking.TrackingGeneratorService;
-import net.tuan08.tracking.TrackingValidatorService;
 
-public class KafkaTrackingApp {
+public class ESTrackingApp {
   @Parameter(names = "--zk-connect", description = "The zk connect string")
   private String zkConnects = "localhost:2181";
+  
+  @Parameter(names = "--es-connect", description = "The zk connect string")
+  private String esConnects = "localhost:9300";
 
-  @Parameter(names = "--kafka-num-of-replication", description = "The number of the replications")
-  private int    numOfReplication = 1;
+  @Parameter(names = "--es-index", description = "The number of the replications")
+  private String  esIndex = "tracking-message";
 
-  @Parameter(names = "--kafka-num-of-partition", description = "The number of the partitions")
-  private int    numOfPartition = 5;
-  
-  @Parameter(names = "--output-topic", description = "The input topic")
-  private String outputTopic = "tracking";
-  
-  
   @Parameter(names = "--tracking-path", description = "The zk connect string")
   private String trackingPath = "/tracking";
   
@@ -36,33 +31,33 @@ public class KafkaTrackingApp {
   @Parameter(names = "--num-of-message-per-chunk", description = "The number of messages per chunk")
   private int numOfMessagePerChunk = 100;
   
-  @Parameter(names = "--input-topic", description = "The input topic")
-  private String inputTopic = "tracking";
-
+  @Parameter(names = "--check-period", description = "Check period for the validator")
+  private long checkPeriod = 5000;
+  
   @Parameter(names = "--max-run-time", description = "The max run time for the application")
   private long maxRunTime = 25000;
   
   private Registry registry ;
   private TrackingGeneratorService generatorService;
-  private TrackingValidatorService validatorService;
   
-  public KafkaTrackingApp(String[] args) throws Exception {
+  private ESTrackingValidator      validatorService;
+  
+  public ESTrackingApp(String[] args) throws Exception {
     String configFile = System.getProperty("tracking.config");
     if(configFile != null) {
       PropertiesConfig config = new PropertiesConfig();
       config.load(new FileInputStream(configFile));
       zkConnects   = config.getProperty("zk.connect", zkConnects);
       
-      numOfPartition   = config.getPropertyAsInt("kafka.num-of-partition", numOfPartition);
-      numOfReplication = config.getPropertyAsInt("kafka.num-of-replication", numOfReplication);
-
+      esConnects   = config.getProperty("es.connect", esConnects);
+      esIndex      = config.getProperty("es.index", esIndex);
+      
       trackingPath = config.getProperty("tracking.path", trackingPath);
       numOfChunk   = config.getPropertyAsInt("tracking.num-of-chunk", numOfChunk);
       numOfMessagePerChunk = config.getPropertyAsInt("tracking.num-of-message-per-chunk", numOfMessagePerChunk);
-      inputTopic = config.getProperty("tracking.input-topic", inputTopic);
-      outputTopic = config.getProperty("tracking.output-topic", outputTopic);
       maxRunTime = config.getPropertyAsLong("tracking.max-run-time", maxRunTime);
     }
+    System.out.println("esConnects = " + esConnects + ", index = " + esIndex);
     new JCommander(this, args);
     RegistryConfig regConfig = RegistryConfig.getDefault();
     regConfig.setConnect(zkConnects);
@@ -70,17 +65,11 @@ public class KafkaTrackingApp {
     
     generatorService  = new TrackingGeneratorService(registry, trackingPath, numOfChunk, numOfMessagePerChunk);
     String[] writerConfig = {
-        "--zk-connect", zkConnects, "--topic", inputTopic, 
-        "--num-of-partition", Integer.toString(numOfPartition),
-        "--num-of-replication", Integer.toString(numOfReplication)
+        "--es-connect", esConnects, "--es-index", esIndex
     };
-    generatorService.addWriter(new KafkaTrackingWriter(writerConfig));
-    
-    validatorService = new TrackingValidatorService(registry, trackingPath, numOfMessagePerChunk);
-    String[] readerConfig = {
-      "--zk-connect", zkConnects, "--topic",      outputTopic,
-    };
-    validatorService.addReader(new KafkaTrackingReader(readerConfig)); 
+    generatorService.addWriter(new ESTrackingWriter(writerConfig));
+  
+    validatorService = new ESTrackingValidator(registry, trackingPath, numOfChunk, esConnects, esIndex, checkPeriod) ;
   }
   
   public void start() throws Exception {
@@ -93,13 +82,10 @@ public class KafkaTrackingApp {
     generatorService.awaitForTermination(maxRunTime, TimeUnit.MILLISECONDS);
     generatorService.shutdown();
     long duration = System.currentTimeMillis() - startTime; 
-    
     if(maxRunTime - duration > 0) {
-      validatorService.awaitForTermination(maxRunTime - duration, TimeUnit.MILLISECONDS);
-      validatorService.shutdown();
-    } else {
-      validatorService.shutdown();
+      validatorService.waitForTermination(maxRunTime - duration);
     }
+    validatorService.stop();
   }
   
   public void shutdown() throws Exception {
@@ -113,7 +99,7 @@ public class KafkaTrackingApp {
   }
   
   static public void main(String[] args) throws Exception {
-    KafkaTrackingApp app = new KafkaTrackingApp(args);
+    ESTrackingApp app = new ESTrackingApp(args);
     app.run();
   }
 }

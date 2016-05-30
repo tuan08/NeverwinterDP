@@ -1,8 +1,8 @@
 archivesBaseName = 'module.elasticsearch'
 
 project.ext {
-  elasticsearchVersion = "1.5.2"
-  luceneVersion = "4.10.4"
+  elasticsearchVersion = "2.3.1"
+  luceneVersion = "5.5.0"
   releaseDir = "${buildDir}/release"
 }
 
@@ -60,9 +60,9 @@ dependencies {
   esDeployJars group: 'org.apache.lucene', name: 'lucene-suggest', version: luceneVersion
   esDeployJars group: 'org.apache.lucene', name: 'lucene-codecs', version: luceneVersion
 
-  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.4.3'
-  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.3'
-  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.4.3'
+  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.6.2'
+  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.6.2'
+  esDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.6.2'
 
   esDeployJars group: 'log4j', name: 'log4j', version: '1.2.17'
   esDeployJars group: 'org.slf4j', name: 'slf4j-api', version: '1.7.6'

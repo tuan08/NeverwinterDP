@@ -13,6 +13,7 @@ dependencies {
 
 
   testCompile group: 'com.clearspring.analytics', name: 'stream', version: '2.7.0'
+
   testCompile group: 'com.codahale.metrics', name: 'metrics-core', version: '3.0.2'
   testCompile group: 'com.codahale.metrics', name: 'metrics-json', version: '3.0.2'
 }

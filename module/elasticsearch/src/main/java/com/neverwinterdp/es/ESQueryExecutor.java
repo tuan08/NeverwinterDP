@@ -84,4 +84,9 @@ public class ESQueryExecutor {
     builder.endObject();
     return builder.string();
   }
+  
+  public long countByMatchTerm(String field, String term) throws Exception {
+    SearchResponse response = esclient.client.prepareSearch(index).setQuery(termQuery(field, term)).setSize(0).execute().actionGet();
+    return response.getHits().getTotalHits();
+  }
 }

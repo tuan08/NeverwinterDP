@@ -38,9 +38,9 @@ public class SysInfoLoggerServiceUnitTest {
     LoggerFactory.log4jUseConsoleOutputConfig("INFO");
     FileUtil.removeIfExist(WORKING_DIR, false);
     NodeBuilder nb = nodeBuilder();
-    nb.getSettings().put("cluster.name",       "neverwinterdp");
-    nb.getSettings().put("path.data",          WORKING_DIR + "/elasticsearch/data");
-    nb.getSettings().put("node.name",          "127.0.0.1");
+    nb.getSettings().put("cluster.name",       "Elasticsearch");
+    nb.getSettings().put("path.home",          WORKING_DIR + "/elasticsearch/data");
+    nb.getSettings().put("node.name",          "localhost");
     nb.getSettings().put("transport.tcp.port", "9300");
 
     node = nb.node();

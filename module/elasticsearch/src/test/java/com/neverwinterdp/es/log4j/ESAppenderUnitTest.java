@@ -31,7 +31,7 @@ public class ESAppenderUnitTest {
     FileUtil.removeIfExist("build/buffer", false);
     NodeBuilder nb = nodeBuilder();
     nb.getSettings().put("cluster.name",       "neverwinterdp");
-    nb.getSettings().put("path.data",          "build/elasticsearch/data");
+    nb.getSettings().put("path.home",          "build/elasticsearch/data");
     nb.getSettings().put("node.name",          "elasticsearch-1");
     nb.getSettings().put("transport.tcp.port", "9300");
     Node node = nb.node();

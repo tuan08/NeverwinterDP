@@ -19,6 +19,8 @@ public class TrackingMessage {
     this.data = data;
   }
 
+  public String uniqueId() { return vmId + ":" + chunkId + ":" + trackId; }
+  
   public String getVmId() { return vmId; }
   public void setVmId(String vmId) { this.vmId = vmId; }
 

@@ -1,8 +1,8 @@
 archivesBaseName = 'scribengin.release'
 
 project.ext {
-  elasticsearchVersion = "1.5.2"
-  luceneVersion = "4.10.4"
+  elasticsearchVersion = "2.3.1"
+  luceneVersion = "5.5.0"
   releaseDir = "${buildDir}/release"
 }
 
@@ -54,9 +54,9 @@ dependencies {
   scribenginDeployJars project(':scribengin/core')
   scribenginDeployJars project(':scribengin/storage')
 
-  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.4.3'
-  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.3'
-  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.4.3'
+  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.6.2'
+  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.6.2'
+  scribenginDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.6.2'
   scribenginDeployJars group: 'com.hubspot.jackson', name: 'jackson-datatype-protobuf', version: '0.6.0'
 
   scribenginDeployJars group: 'org.hdrhistogram', name: 'HdrHistogram', version: '2.1.7'

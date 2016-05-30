@@ -98,5 +98,11 @@ class TrackingService(Service):
         'cmdFindPid': 'pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp',
         'cmdStart':   'sleep 10 && ' +self.homeDir + '/bin/run-tracking.sh kafka --daemon',
         'cmdStop':    'kill -9 `pgrep -f net.tuan08.tracking.kafka.KafkaTrackingApp`'
+      },
+
+      'elasticsearch': {
+        'cmdFindPid': 'pgrep -f net.tuan08.tracking.es.ESTrackingApp',
+        'cmdStart':   'sleep 10 && ' +self.homeDir + '/bin/run-tracking.sh elasticsearch --daemon',
+        'cmdStop':    'kill -9 `pgrep -f net.tuan08.tracking.es.ESTrackingApp`'
       }
     }

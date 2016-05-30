@@ -1,6 +1,7 @@
 package com.neverwinterdp.es;
 
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.regexpQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.util.Map;
 
@@ -9,13 +10,11 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.index.query.BaseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -151,9 +150,9 @@ public class ESObjectClient<T> {
     return response;
   }
 
-  public long count(BaseQueryBuilder xqb) throws Exception {
-    CountResponse response = esclient.client.prepareCount(index).setQuery(xqb).execute().actionGet();
-    return response.getCount();
+  public long count(QueryBuilder xqb) throws Exception {
+    SearchResponse response = esclient.client.prepareSearch(index).setQuery(xqb).setSize(0).execute().actionGet();
+    return response.getHits().getTotalHits();
   }
   
   public void close()  {

@@ -28,6 +28,9 @@ dependencies {
   compile project(':scribengin/core')
   compile project(':scribengin/dataflow/analytics')
 
+
+  compile group: 'org.jboss.netty', name: 'netty', version: '3.2.9.Final'
+
   webuiDeployJars project(':lib/utils')
   webuiDeployJars project(':lib/yara')
   webuiDeployJars project(':module/commons')

@@ -1,7 +1,11 @@
 package com.neverwinterdp.es;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequestBuilder;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
@@ -11,10 +15,10 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequest;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.action.admin.indices.optimize.OptimizeRequestBuilder;
-import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequestBuilder;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsResponse;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
@@ -23,8 +27,6 @@ import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.node.DiscoveryNode;
-import org.elasticsearch.common.collect.ImmutableList;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 
@@ -35,25 +37,25 @@ public class ESClient {
   protected TransportClient client;
   private String[] address;
 
-  public ESClient(String[] address) {
+  public ESClient(String[] address) throws UnknownHostException {
     this("neverwinterdp", address);
   }
   
-  public ESClient(String clusterName, String[] address) {
+  public ESClient(String clusterName, String[] address) throws UnknownHostException {
     this.address = address;
     Settings settings = 
-      ImmutableSettings.settingsBuilder().
+      Settings.builder().
       put("cluster.name", clusterName).
       put("transport.ping_schedule", "20s").
       build();
-    client = new TransportClient(settings);
+    client  = TransportClient.builder().settings(settings).build();
     for (String selAddr : address) {
       int port = 9300;
       if (selAddr.indexOf(":") > 0) {
         port = Integer.parseInt(selAddr.substring(selAddr.indexOf(":") + 1));
         selAddr = selAddr.substring(0, selAddr.indexOf(":"));
       }
-      client.addTransportAddress(new InetSocketTransportAddress(selAddr, port));
+      client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(selAddr), port));
     }
   }
 
@@ -62,7 +64,7 @@ public class ESClient {
   public boolean waitForConnected(long timeout) throws InterruptedException {
     long stopTime = System.currentTimeMillis() + timeout ;
     while(System.currentTimeMillis() < stopTime) {
-      ImmutableList<DiscoveryNode> nodes  = client.connectedNodes() ;
+      List<DiscoveryNode> nodes  = client.connectedNodes() ;
       if(!nodes.isEmpty()) return true ;
       Thread.sleep(1000);
     }
@@ -78,8 +80,8 @@ public class ESClient {
   }
 
   public void optimizeIndex(String index) throws Exception {
-    OptimizeRequestBuilder builder = client.admin().indices().prepareOptimize(index);
-    OptimizeResponse response = builder.execute().actionGet();
+    ActionFuture<ForceMergeResponse> action = client.admin().indices().forceMerge(new ForceMergeRequest(index));
+    ForceMergeResponse response = action.actionGet();
     System.out.println("Optimize Failed Shard: " + response.getFailedShards());
   }
 

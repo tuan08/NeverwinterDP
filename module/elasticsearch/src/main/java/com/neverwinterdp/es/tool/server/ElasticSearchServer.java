@@ -67,7 +67,7 @@ public class ElasticSearchServer implements Server {
       try {
         String[] args = {
             "--es:server.name=" + hostname,
-            "--es:path.data=" + dataDir,
+            "--es:path.home=" + dataDir,
             "--es:transport.tcp.port=" + port
         } ;
         final Configuration configuration = new Configuration() ;

@@ -1,8 +1,8 @@
 archivesBaseName = 'tracking.core'
 
 project.ext {
-  elasticsearchVersion = "1.5.2"
-  luceneVersion = "4.10.4"
+  elasticsearchVersion = "2.3.1"
+  luceneVersion = "5.5.0"
   releaseDir = "${buildDir}/release"
 }
 
@@ -41,9 +41,10 @@ dependencies {
   trackingAppDeployJars project(':module/kafka')
   trackingAppDeployJars project(':module/elasticsearch')
 
-  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.4.3'
-  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.3'
-  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.4.3'
+  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.6.2'
+  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.6.2'
+  trackingAppDeployJars group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.6.2'
+  trackingAppDeployJars group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-smile', version: '2.6.2'
   trackingAppDeployJars group: 'com.hubspot.jackson', name: 'jackson-datatype-protobuf', version: '0.6.0'
 
   trackingAppDeployJars group: 'org.hdrhistogram', name: 'HdrHistogram', version: '2.1.7'
@@ -83,10 +84,11 @@ dependencies {
   trackingAppDeployJars group: 'org.apache.kafka', name: 'kafka-clients', version: '0.9.0.1'
   trackingAppDeployJars group: 'org.apache.kafka', name: 'kafka_2.10', version: '0.9.0.1'
   trackingAppDeployJars group: 'log4j', name: 'log4j', version: '1.2.17'
-  trackingAppDeployJars group: 'com.yammer.metrics', name: 'metrics-core', version: '2.2.0'
+  //trackingAppDeployJars group: 'com.yammer.metrics', name: 'metrics-core', version: '2.2.0'
   trackingAppDeployJars group: 'com.mycila.guice', name: 'mycila-guice-all', version: '3.2.ga'
   trackingAppDeployJars group: 'com.mycila', name: 'mycila-jmx', version: '1.1.ga'
-  trackingAppDeployJars group: 'io.netty', name: 'netty-all', version: '4.0.23.Final'
+  //trackingAppDeployJars group: 'io.netty', name: 'netty-all', version: '4.0.23.Final'
+  trackingAppDeployJars group: 'io.netty', name: 'netty', version: '3.10.5.Final'
   trackingAppDeployJars group: 'com.google.protobuf', name: 'protobuf-java', version: '2.6.0'
   trackingAppDeployJars group: 'org.reflections', name: 'reflections', version: '0.9.9-RC1'
   trackingAppDeployJars group: 'org.scala-lang', name: 'scala-library', version: '2.10.4'
@@ -98,7 +100,13 @@ dependencies {
   trackingAppDeployJars group: 'net.openhft', name: 'chronicle', version: '3.2.2'
   trackingAppDeployJars group: 'net.openhft', name: 'compiler', version: '2.2.0'
   trackingAppDeployJars group: 'net.openhft', name: 'lang', version: '6.4.6'
+
   trackingAppDeployJars group: 'org.elasticsearch', name: 'elasticsearch', version: elasticsearchVersion
+
+  trackingAppDeployJars group: 'com.twitter', name: 'jsr166e', version: '1.1.0'
+  trackingAppDeployJars group: 'com.tdunning', name: 't-digest', version: '3.0'
+  trackingAppDeployJars group: 'com.carrotsearch', name: 'hppc', version: '0.7.1'
+  trackingAppDeployJars group: 'com.ning', name: 'compress-lzf', version: '1.0.2'
 
   trackingAppDeployJars group: 'org.apache.lucene', name: 'lucene-core', version: luceneVersion
   trackingAppDeployJars group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: luceneVersion

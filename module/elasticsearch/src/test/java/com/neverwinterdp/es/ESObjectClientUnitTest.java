@@ -1,21 +1,18 @@
 package com.neverwinterdp.es;
 
-import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.queryStringQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.queryString;
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.FilteredQueryBuilder;
-import org.elasticsearch.index.query.GeoDistanceFilterBuilder;
-import org.elasticsearch.index.query.RangeFilterBuilder;
+import org.elasticsearch.index.query.GeoDistanceQueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -24,27 +21,28 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.neverwinterdp.es.ESClient;
-import com.neverwinterdp.es.ESObjectClient;
 import com.neverwinterdp.util.io.FileUtil;
 import com.neverwinterdp.util.io.IOUtil;
+import com.neverwinterdp.util.log.LoggerFactory;
 import com.neverwinterdp.util.text.DateUtil;
 
 /**
  * $Author: Tuan Nguyen$
  **/
 public class ESObjectClientUnitTest {
-  private Node node ;
-  private ESClient esclient ;
-  private ESObjectClient<Map<String, Object>> esObjecclient ;
+  private Node                                node;
+  private ESClient                            esclient;
+  private ESObjectClient<Map<String, Object>> esObjecclient;
   
   @Before
   public void setup() throws Exception {
+    LoggerFactory.log4jUseConsoleOutputConfig("INFO");
     FileUtil.removeIfExist("build/elasticsearch", false);
+    
     NodeBuilder nb = nodeBuilder();
-    nb.getSettings().put("cluster.name",       "neverwinterdp");
-    nb.getSettings().put("path.data",          "build/elasticsearch/data");
-    nb.getSettings().put("node.name",          "elasticsearch-1");
+    nb.getSettings().put("cluster.name",       "Elasticsearch");
+    nb.getSettings().put("path.home",          "build/elasticsearch/data");
+    nb.getSettings().put("node.name",          "localhost");
     nb.getSettings().put("transport.tcp.port", "9300");
 
     node = nb.node();
@@ -71,7 +69,7 @@ public class ESObjectClientUnitTest {
           IOUtil.getFileContentAsString("src/test/resources/record.mapping.json", "UTF8")
       );
     }
-
+    
     esObjecclient.getESClient().getClusterState();
     Date currTime = new Date();
     Date pastTime = DateUtil.parseCompactDate("1/1/2011");
@@ -89,10 +87,11 @@ public class ESObjectClientUnitTest {
       holder.put(Integer.toString(i), record);
     }
     esObjecclient.put(holder);
-
+    
     Thread.sleep(1000);
 
     Assert.assertEquals(20, esObjecclient.count(termQuery("createdBy", "system")));
+    
     Assert.assertEquals(20, esObjecclient.count(termQuery("content", "data")));
     Assert.assertEquals(20, esObjecclient.searchTermByRegex("createdBy", "syste.*", 0, 50).getHits().getTotalHits());
     SearchResponse sres = esObjecclient.search(termQuery("createdBy", "system"), 0, 10);
@@ -109,7 +108,7 @@ public class ESObjectClientUnitTest {
     }
 
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.string", "string")));
-    Assert.assertEquals(20, esObjecclient.count(queryString("primitive.string:string")));
+    Assert.assertEquals(20, esObjecclient.count(queryStringQuery("primitive.string:string")));
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.tag", "tag1")));
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.tag", "tag2")));
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.tag", "colon:colon")));
@@ -127,20 +126,17 @@ public class ESObjectClientUnitTest {
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.booleanValue", true)));
     Assert.assertEquals(20, esObjecclient.count(termQuery("primitive.booleanValue", "true")));
 
-    GeoDistanceFilterBuilder geoFilter = FilterBuilders.geoDistanceFilter("location");
+    GeoDistanceQueryBuilder geoFilter = new GeoDistanceQueryBuilder("location");
     geoFilter.lat(40.73d).lon(-74.1d);
     geoFilter.distance("1km");
-    FilteredQueryBuilder geoQuery = filteredQuery(matchAllQuery(), geoFilter);
-    Assert.assertEquals(20, esObjecclient.count(geoQuery));
+    Assert.assertEquals(20, esObjecclient.count(geoFilter));
 
-    RangeFilterBuilder numFilter = FilterBuilders.rangeFilter("createdTime");
+    RangeQueryBuilder numFilter = new RangeQueryBuilder("createdTime");
     numFilter.
       from(pastTime.getTime()).
       includeLower(true).
-      to(pastTime.getTime() + 1000 * 60 * 60 * 48).
-      cache(false);
-    FilteredQueryBuilder numQuery = filteredQuery(matchAllQuery(), numFilter);
-    Assert.assertEquals(5, esObjecclient.count(numQuery));
+      to(pastTime.getTime() + 1000 * 60 * 60 * 48);
+    Assert.assertEquals(5, esObjecclient.count(numFilter));
 
     Assert.assertTrue(esObjecclient.remove("0"));
     Thread.sleep(1000);
@@ -173,6 +169,6 @@ public class ESObjectClientUnitTest {
     return record;
   }
   
-  static public class Record extends HashMap<String, Object> {
+  static public class Record extends HashMap<String, Object> implements Serializable {
   }
 }

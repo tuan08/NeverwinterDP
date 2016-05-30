@@ -1,5 +1,6 @@
 package net.tuan08.tracking;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -125,6 +126,7 @@ public class TrackingGeneratorService {
   }
   
   public class ChunkGenerator {
+    private DecimalFormat SEQ_ID_FORMATTER = new DecimalFormat("0000000");
     private String vmId        = "localhost";
     private int    numOfChunk  = 5;
     private int    numOfMessage   = 1000;
@@ -143,14 +145,14 @@ public class TrackingGeneratorService {
         trackingRegistry.updateGeneratorReport(currentReport);
         if(currentChunkIdTracker == numOfChunk) return null ;
         
-        currentChunkId = "chunk-" + currentChunkIdTracker++; 
+        currentChunkId = "chunk-" + SEQ_ID_FORMATTER.format(currentChunkIdTracker++); 
         currentChunkMessageIdTracker = 0;
         currentReport = new TrackingMessageReport(vmId, currentChunkId, numOfMessage);
         trackingRegistry.addGeneratorReport(currentReport);
       }
       
       if(currentChunkId == null) {
-        currentChunkId = "chunk-" + currentChunkIdTracker++; 
+        currentChunkId = "chunk-" + SEQ_ID_FORMATTER.format(currentChunkIdTracker++);
         currentReport = new TrackingMessageReport(vmId, currentChunkId, numOfMessage);
         trackingRegistry.addGeneratorReport(currentReport);
       }

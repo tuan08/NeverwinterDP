@@ -51,9 +51,16 @@ public class LocalScribenginCluster {
     VMClusterBuilder.h1("Start Elasticsearch");
     NodeBuilder nb = nodeBuilder();
     nb.getSettings().put("cluster.name",       "neverwinterdp");
-    nb.getSettings().put("path.data",          baseDir + "/elasticsearch/data");
-    nb.getSettings().put("node.name",          "elasticsearch-1");
-    nb.getSettings().put("transport.tcp.port", "9300");
+    nb.getSettings().put("path.home",          baseDir + "/elasticsearch/data");
+//    nb.getSettings().put("node.name",          "localhost");
+//    nb.getSettings().put("network.host",       "_local:ipv4_");
+//    nb.getSettings().put("network.bind_host",  "0.0.0.0");
+//    nb.getSettings().put("transport.tcp.port", "9300");
+//    nb.getSettings().put("http.host",          "localhost");
+//    nb.getSettings().put("http.port",          "9200");
+//    nb.getSettings().put("http.cors.enabled",  "true");
+//    nb.getSettings().put("http.cors.allow-origin", "*");
+
     esNode = nb.node();
     
     VMClusterBuilder.h1("Start kafka cluster");
@@ -70,7 +77,6 @@ public class LocalScribenginCluster {
   public void shutdown() throws Exception {
     scribenginClusterBuilder.shutdown();
     kafkaCluster.shutdown();
-    esNode.stop();
     esNode.close();
   }
 }
